@@ -1,3 +1,78 @@
+# Homelab GFX906 - MI50 AI Experiment Environment
+
+> **[ 🇨🇳 中文版本 (Chinese Version) ](./README_zh.md)**
+
+This directory (`homelab/`) is an extension based on the `gfx906-ml` project, specifically optimized for the **AMD Radeon Instinct MI50 (gfx906)** compute card.
+
+It integrates the following core functionalities:
+1.  **LLM Inference & Data Synthesis**: High-performance inference and data rewriting using vLLM and Distilabel.
+2.  **Multimodal Generation**: Text-to-Image generation using GLM-Image with environment isolation.
+3.  **Model Fine-tuning**: LoRA fine-tuning for large models (e.g., Qwen) using LlamaFactory.
+
+## 📂 Directory Structure
+
+```text
+homelab/
+├── DataGen.ipynb   # [Inference] vLLM deployment & Distilabel data generation/rewriting
+├── Omni.ipynb      # [Image Gen] GLM-Image environment setup & generation (Dependency fix)
+└── finetune.ipynb  # [Training] LlamaFactory fine-tuning (Optimized for MI50 32G)
+
+```
+
+## 🛠️ Script Usage
+
+### 1. LLM Inference & Data Gen (`DataGen.ipynb`)
+
+Demonstrates how to deploy an OpenAI-compatible API locally on MI50 and build an automated pipeline for text processing.
+
+* **Core Components**: `vLLM`, `Distilabel`, `Qwen2.5/Qwen3`
+* **Workflow**:
+1. **Environment Check**: Auto-detects `vLLM` and ROCm `PyTorch` status.
+2. **Service Launch**: Starts a local `vLLM` server via subprocess (GPU util 0.95, Context 8192).
+3. **Pipeline Construction**: Connects `Distilabel` to the local API.
+4. **Deep Rewrite**: Uses a specialized "Anti-Plagiarism/Refactoring" system prompt to rewrite text.
+5. **Output**: Generates `deep_rewritten_results.json`.
+
+
+
+> **💡 Note**: After running the service launch cell, wait until you see "Uvicorn running" in the output before proceeding.
+
+### 2. Multimodal Painting (`Omni.ipynb`)
+
+Solves complex dependency conflicts (specifically Numpy versions) in the ROCm environment to successfully run **GLM-Image**.
+
+* **Core Components**: `Diffusers`, `GLM-Image`, `Virtualenv`
+* **Key Feature (Isolation)**: Creates a virtual environment `env_glm` and forces `numpy==1.26.4` installation while inheriting system-level ROCm PyTorch (`--system-site-packages`).
+* **MI50 Optimization**:
+* **Black Image Fix**: Automatically casts VAE/VQModel to `float32` (half-precision VAE decoding fails on MI50).
+* **CPU Offload**: Enables model CPU offloading to fit within 32GB VRAM.
+
+
+* **Usage**: Run the setup cells -> **Restart Kernel** -> Switch to `env_glm` kernel -> Run generation.
+
+### 3. Model Fine-tuning (`finetune.ipynb`)
+
+Efficient LoRA fine-tuning based on LlamaFactory, with a configuration deeply customized for MI50 hardware.
+
+* **Core Components**: `LlamaFactory`, `Deepspeed`
+* **Hardware Config (32GB VRAM)**:
+* **Flash Attention**: SDPA enabled.
+* **Precision**: **Force `fp16**`. (MI50/Vega20 does not support BF16 hardware acceleration).
+* **Throughput**: `batch_size=4`, `grad_accum=4` (Effective batch 16), `cutoff_len=4096`.
+
+
+* **Workflow**: Memory Cleanup -> Data Registration (`evol_instruct_dataset.json`) -> Config Generation -> Training Launch.
+
+## ⚠️ Known Issues & Notes
+
+1. **No BF16 Support**: The MI50 (Vega 20) does not support hardware `bfloat16`. The config in `finetune.ipynb` is strictly set to `"fp16": True`. Using bf16 will result in errors or extremely slow software emulation.
+2. **Numpy Conflict**: `Omni.ipynb` uses a specific venv to lock `numpy==1.26.4` to fix Diffusers compatibility without breaking the system PyTorch. Do not upgrade Numpy globally.
+3. **Memory Management**: It is recommended to run the "Nuke Python" command (provided in `finetune.ipynb`) or restart the kernel when switching between vLLM, Training, or Image Gen tasks to avoid VRAM fragmentation.
+
+---
+
+
+
 # ML software for deprecated GFX906 arch
 
 ## Prebuild images

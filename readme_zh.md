@@ -1,6 +1,6 @@
 # Homelab GFX906 - MI50 AI 实验环境
 
-> **[ 🇬🇧 English Version ](./README.md)**
+> **[ 🇬🇧 English Version ](./readme.md)**
 
 本目录 (`homelab/`) 是基于 `gfx906-ml` 项目的扩展，专门针对 **AMD Radeon Instinct MI50 (gfx906)** 计算卡优化的 AI 实验环境。
 

@@ -1,6 +1,6 @@
 # Homelab GFX906 - MI50 AI Experiment Environment
 
-> **[ 🇨🇳 中文版本 (Chinese Version) ](./README_zh.md)**
+> **[ 🇨🇳 中文版本 (Chinese Version) ](./readme_zh.md)**
 
 This directory (`homelab/`) is an extension based on the `gfx906-ml` project, specifically optimized for the **AMD Radeon Instinct MI50 (gfx906)** compute card.
 

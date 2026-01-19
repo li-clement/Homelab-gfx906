@@ -4,7 +4,22 @@
 
 This directory (`homelab/`) is an extension based on the `gfx906-ml` project, specifically optimized for the **AMD Radeon Instinct MI50 (gfx906)** compute card.
 
-It integrates the following core functionalities:
+## 🖥️ Hardware Specification
+
+The scripts and configurations in this repo are tuned for the following setup:
+
+* **Host**: [Lenovo ThinkStation P620](https://psref.lenovo.com/syspool/Sys/PDF/ThinkStation/ThinkStation_P620/ThinkStation_P620_Spec.pdf)
+* **CPU**: AMD Ryzen™ Threadripper™ PRO 5945WX (12C/24T)
+* **RAM**: 128GB DDR4 RDIMM ECC
+* **GPU**: AMD Radeon Instinct MI50 32GB (HBM2)
+* **Storage**:
+    * **System**: 512GB NVMe SSD
+    * **Cache/Data**: 1TB SATA SSD
+    * **Archive**: 6TB SAS HDD
+
+## 🚀 Core Features
+
+It integrates the following functionalities:
 1.  **LLM Inference & Data Synthesis**: High-performance inference and data rewriting using vLLM and Distilabel.
 2.  **Multimodal Generation**: Text-to-Image generation using GLM-Image with environment isolation.
 3.  **Model Fine-tuning**: LoRA fine-tuning for large models (e.g., Qwen) using LlamaFactory.
@@ -16,7 +31,6 @@ homelab/
 ├── DataGen.ipynb   # [Inference] vLLM deployment & Distilabel data generation/rewriting
 ├── Omni.ipynb      # [Image Gen] GLM-Image environment setup & generation (Dependency fix)
 └── finetune.ipynb  # [Training] LlamaFactory fine-tuning (Optimized for MI50 32G)
-
 ```
 
 ## 🛠️ Script Usage

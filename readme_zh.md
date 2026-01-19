@@ -4,6 +4,21 @@
 
 本目录 (`homelab/`) 是基于 `gfx906-ml` 项目的扩展，专门针对 **AMD Radeon Instinct MI50 (gfx906)** 计算卡优化的 AI 实验环境。
 
+## 🖥️ 硬件配置 (Hardware Spec)
+
+本仓库的脚本与参数调优基于以下工作站环境：
+
+* **主机**: [Lenovo ThinkStation P620](https://psref.lenovo.com/syspool/Sys/PDF/ThinkStation/ThinkStation_P620/ThinkStation_P620_Spec.pdf)
+* **CPU**: AMD Ryzen™ Threadripper™ PRO 5945WX (12核/24线程)
+* **内存**: 128GB DDR4 RDIMM ECC
+* **显卡**: AMD Radeon Instinct MI50 32GB (HBM2)
+* **存储**:
+    * **系统盘**: 512GB NVMe SSD
+    * **数据/缓存**: 1TB SATA SSD
+    * **冷存储**: 6TB SAS HDD
+
+## 🚀 核心功能
+
 该环境集成了以下核心功能：
 1.  **LLM 推理与数据合成**：使用 vLLM 和 Distilabel 进行高性能推理及数据重写。
 2.  **多模态绘图**：运行 GLM-Image 等扩散模型进行文生图。

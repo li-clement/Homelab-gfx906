@@ -1,0 +1,153 @@
+# =========================================================
+# 1. Namespace (命名空间)
+# =========================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vllm
+
+---
+# =========================================================
+# 2. Service (网络端口暴露)
+# =========================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-finetune-service
+  namespace: vllm
+spec:
+  # 使用 NodePort 模式，方便局域网直接访问
+  type: NodePort
+  selector:
+    app: vllm-finetune
+  ports:
+    # 1. Jupyter Lab (开发环境入口)
+    - name: jupyter
+      protocol: TCP
+      port: 8888
+      targetPort: 8888
+      nodePort: 30888
+      
+    # 2. LLaMA-Factory WebUI (微调可视化界面)
+    - name: llama-webui
+      protocol: TCP
+      port: 7860
+      targetPort: 7860
+      nodePort: 30786
+      
+    # 3. Ray Dashboard (分布式计算监控)
+    - name: ray-dashboard
+      protocol: TCP
+      port: 8265
+      targetPort: 8265
+      nodePort: 30265
+      
+    # 4. vLLM API Server (如果手动启动 API 服务)
+    - name: vllm-api
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30000
+
+---
+# =========================================================
+# 3. Deployment (工作负载配置)
+# =========================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-finetune-app
+  namespace: vllm
+  labels:
+    app: vllm-finetune
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-finetune
+  template:
+    metadata:
+      labels:
+        app: vllm-finetune
+    spec:
+      # 显卡节点通常需要 Host 网络性能最好，但为了端口管理方便，这里用 Bridge 模式配合 Service
+      # 如果遇到网络性能瓶颈，可以取消注释 hostNetwork: true
+      # hostNetwork: true 
+      
+      containers:
+      - name: main-container
+        # ⚠️ 这里填写你刚刚构建并导入 K3s 的镜像名称
+        image: vllm-finetune:v1
+        # ⚠️ 必须设为 Never，因为镜像是本地构建的，不要去 DockerHub 拉取
+        imagePullPolicy: Never
+        
+        # 启动命令：默认启动 Jupyter Lab
+        # 你可以在 Jupyter 的 Terminal 中手动启动 LLaMA-Factory 或 vLLM
+        command: ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token='QazWsx_520'", "--notebook-dir=/workspace"]
+        
+        # --- 环境变量配置 ---
+        env:
+        # 指定 ROCm 架构 (防止自动检测出错)
+        - name: PYTORCH_ROCM_ARCH
+          value: "gfx906"
+        # 显式指定可见设备
+        - name: HIP_VISIBLE_DEVICES
+          value: "0"
+        # HuggingFace 缓存路径
+        - name: HF_HOME
+          value: "/data/models"
+        # 国内镜像加速
+        - name: HF_ENDPOINT
+          value: "https://hf-mirror.com"
+        # Ray 内存优化 (允许使用慢速存储作为溢出，防止 OOM)
+        - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
+          value: "1"
+        # 解决 vLLM 多进程启动问题
+        - name: VLLM_WORKER_MULTIPROC_METHOD
+          value: "spawn"
+
+        # --- 资源限制 (针对 128G 内存优化) ---
+        resources:
+          limits:
+            amd.com/gpu: 1
+            # 给容器分配 100GB 内存，预留 28GB 给宿主机系统
+            memory: "100Gi"
+            # 根据你的 CPU 核心数调整，例如 16 核
+            cpu: "16"
+          requests:
+            amd.com/gpu: 1
+            memory: "64Gi"
+            cpu: "8"
+
+        # --- 存储挂载 ---
+        volumeMounts:
+        # 1. 共享内存 (Ray 和 PyTorch 必须)
+        - mountPath: /dev/shm
+          name: dshm
+        # 2. 模型缓存 (宿主机直通)
+        - mountPath: /data/models
+          name: host-model-storage
+        # 3. 工作区 (代码和 Notebook)
+        - mountPath: /workspace
+          name: workspace-storage
+
+      # --- 卷定义 ---
+      volumes:
+      # 优化共享内存：使用内存作为介质，限制为 64GB
+      # 注意：这个 64G 包含在 limits.memory 的 100G 里面
+      - name: dshm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 64Gi
+      
+      # 宿主机模型路径
+      - name: host-model-storage
+        hostPath:
+          path: /mnt/data_5T/vllm_models
+          type: DirectoryOrCreate
+      
+      # 宿主机工作区路径
+      - name: workspace-storage
+        hostPath:
+          path: /mnt/data_5T/jupyter_workspace
+          type: DirectoryOrCreate
